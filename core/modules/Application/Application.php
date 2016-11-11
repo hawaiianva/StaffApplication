@@ -17,37 +17,50 @@ class Application extends CodonModule
 {
 	public function index()
 	{
-	
-		if(!Auth::LoggedIn())
+             if(!Auth::LoggedIn())
 		{
 			$this->set('message', 'You must be logged in to access this feature!');
 			$this->render('core_error.tpl');
 			return;
 		}
 		
-		
+		//Google reCaptcha
+                //updated to Google noCaptcha 1/15
 		require_once CORE_LIB_PATH.'/recaptcha/recaptchalib.php';
 
+                $this->set('sitekey', RECAPTCHA_PUBLIC_KEY);
+                $this->set('lang', 'en');
 
-		if($this->post->submit)
-		{
-			
-								
-				
-			
-			$resp = recaptcha_check_answer (Config::Get('RECAPTCHA_PRIVATE_KEY'),
-				$_SERVER["REMOTE_ADDR"],
-				$_POST["recaptcha_challenge_field"],
-				$_POST["recaptcha_response_field"]);
-			
-			// Check the captcha thingy
-			if(!$resp->is_valid)
-			{
-				$this->set('captcha_error', $resp->error);
-				$this->set('message', 'You failed the captcha test!');
-				$this->render('application_form.tpl');
-				return;
+
+		if($this->post->submit)	{
+			if(Auth::LoggedIn() == false) {
+				# Make sure they entered an email address
+				if(trim($this->post->name) == '' || trim($this->post->email) == '') {
+					$this->set('message', 'You must enter a name and email!');
+					$this->render('core_error.tpl');
+					return;
+				}
 			}
+
+                        //Google reCaptcha
+                        //updated to Google noCaptcha 1/15
+                        $resp = null;
+                        $reCaptcha = new ReCaptcha(RECAPTCHA_PRIVATE_KEY);
+                        // Was there a reCAPTCHA response?
+                        if ($_POST["g-recaptcha-response"]) {
+                                $resp = $reCaptcha->verifyResponse(
+                                $_SERVER["REMOTE_ADDR"],
+                                $_POST["g-recaptcha-response"]
+                            );
+                        }
+
+                        //check if reCaptcha response was valid
+                        if ($resp == null) {
+                            $this->set('captcha_error', 'reCaptcha Validation Error');
+                            $this->render('application_form.php');
+                            return;
+                        }
+                        //end Google reCaptcha
 			
 			if($this->post->subject == '' || trim($this->post->message) == '')
 			
@@ -67,7 +80,7 @@ class Application extends CodonModule
 			$message = utf8_encode($message);
 			Util::SendEmail(ADMIN_EMAIL, $subject, $message);
 			
-			$this->render('application_sent.tpl');
+			$this->render('application_sent.php');
 			return;
 		}		
 		
@@ -85,7 +98,7 @@ class Application extends CodonModule
 		//echo 'output of $_SESSION: <br />';
 		//print_r($_SESSION);
 		
-		$this->render('application_form.tpl');
+		$this->render('application_form.php');
 	}
 	
 }
