@@ -17,7 +17,14 @@ class Application extends CodonModule
 {
 	public function index()
 	{
-                //Google reCaptcha
+             if(!Auth::LoggedIn())
+		{
+			$this->set('message', 'You must be logged in to access this feature!');
+			$this->render('core_error.tpl');
+			return;
+		}
+		
+		//Google reCaptcha
                 //updated to Google noCaptcha 1/15
 		require_once CORE_LIB_PATH.'/recaptcha/recaptchalib.php';
 
